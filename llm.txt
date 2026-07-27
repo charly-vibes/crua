@@ -1,0 +1,45 @@
+# Crua
+
+> Cross-language CLI that checks whether code respects the raw hardware and runtime cost model it executes on — cache-line layout, dispatch/type stability, thread vs. event-loop concurrency models, and lock/STM contention — independent of whether that code is logically correct or well-composed.
+
+## What It Does
+
+Crua analyzes source code without executing it and identifies cost patterns — structural shapes that carry a disproportionate hardware or runtime cost relative to a straightforward fix. It classifies findings into five kinds:
+
+- **layout** — false sharing, missing padding/alignment, AoS vs. SoA mismatch
+- **dispatch** — type instability, boxed math, reflection-based interop, megamorphic call sites
+- **vectorization** — scalar loop where a vectorized/bulk operation exists
+- **concurrency-model-mismatch** — code written as if a runtime provides parallelism it does not
+- **contention** — lock, atomic-CAS, or STM retry storms
+
+Findings are tiered by evidentiary strength (0–3), from lexical pattern match to empirically verified benchmark. The tool never generates or modifies source files by default; benchmark generation (`crua verify`) is an explicitly separate step.
+
+## Key Commands
+
+```
+crua scan         # Scan for cost patterns (default: diff-scoped)
+crua verify       # Generate and run benchmarks to confirm findings
+crua catalogue    # List available cost pattern kinds
+```
+
+## Project Structure
+
+```
+crua/
+├── crua-ears-spec.md      # Authoritative requirements
+├── book.toml              # mdBook docs config
+├── docs/src/              # Documentation source
+├── openspec/              # Spec-driven development
+├── scripts/               # Build and validation scripts
+└── .wai/                  # Workflow tracking
+```
+
+## Language Support
+
+Planned front-ends for C#, Julia, Python, Clojure, and Rust, each using language-appropriate benchmarking toolchains (BenchmarkDotNet, BenchmarkTools.jl, pyperf, criterium).
+
+## Links
+
+- Repository: https://github.com/charly-vibes/crua
+- Issues: https://github.com/charly-vibes/crua/issues
+- Changelog: CHANGELOG.md
