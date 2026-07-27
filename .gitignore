@@ -13,9 +13,12 @@ target
 # Contains mutation testing data
 **/mutants.out*/
 
-# Generated documentation
+# Generated documentation (mkDocs, legacy)
 .build/
 site/
+
+# Generated documentation (mdBook)
+docs/book/
 
 # Beads / Dolt files (added by bd init)
 .dolt/

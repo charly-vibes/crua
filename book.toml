@@ -1,0 +1,17 @@
+[book]
+authors = ["charly vibes"]
+language = "en"
+src = "docs/src"
+title = "Crua"
+description = "Specification and implementation roadmap for the Crua cost-pattern analysis CLI"
+
+[build]
+build-dir = "docs/book"
+
+[output.html]
+default-theme = "navy"
+git-repository-url = "https://github.com/charly-vibes/crua"
+edit-url-template = "https://github.com/charly-vibes/crua/edit/main/{path}"
+site-url = "/crua/"
+no-section-label = true
+additional-css = []

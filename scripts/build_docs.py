@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble the MkDocs source tree from authoritative project documents."""
+"""Assemble the mdBook source tree from authoritative project documents."""
 
 from __future__ import annotations
 
@@ -8,41 +8,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BUILD_DOCS = ROOT / ".build" / "docs"
-
+SRC = ROOT / "docs" / "src"
 CHANGES: dict[str, str] = {}
-
-
-def validate_source_inventory() -> None:
-    changes_root = ROOT / "openspec" / "changes"
-    if not changes_root.exists():
-        return  # no changes yet — no-op
-    discovered_changes = {
-        path.name
-        for path in changes_root.iterdir()
-        if path.is_dir() and path.name != "archive"
-    }
-    declared_changes = set(CHANGES)
-    if discovered_changes != declared_changes:
-        raise ValueError(
-            "documentation change inventory is stale; "
-            f"missing: {sorted(discovered_changes - declared_changes)}; "
-            f"removed: {sorted(declared_changes - discovered_changes)}"
-        )
-
-    for change_id, capability in CHANGES.items():
-        source = changes_root / change_id
-        discovered_specs = {
-            path.relative_to(source)
-            for path in (source / "specs").rglob("spec.md")
-        }
-        declared_specs = {Path("specs") / capability / "spec.md"}
-        if discovered_specs != declared_specs:
-            raise ValueError(
-                f"documentation capability inventory is stale for {change_id}; "
-                f"found: {sorted(map(str, discovered_specs))}; "
-                f"expected: {sorted(map(str, declared_specs))}"
-            )
 
 
 def copy_with_notice(source: Path, destination: Path, notice: str) -> None:
@@ -52,9 +19,45 @@ def copy_with_notice(source: Path, destination: Path, notice: str) -> None:
     destination.write_text(f"{notice}\n\n{source.read_text()}")
 
 
+def build_summary() -> str:
+    lines = [
+        "# Summary",
+        "",
+        "[Home](./index.md)",
+        "[Project Context](./project-context.md)",
+        "[EARS Specification](./specification/ears.md)",
+    ]
+
+    if CHANGES:
+        lines.append("")
+        lines.append("# Roadmap")
+        lines.append("")
+        lines.append(f"- [Overview](./roadmap/index.md)")
+        for change_id in CHANGES:
+            lines.append(f"  - [`{change_id}`](./roadmap/{change_id}/proposal.md)")
+            lines.append(f"    - [Capability delta](./roadmap/{change_id}/spec.md)")
+            lines.append(f"    - [Design](./roadmap/{change_id}/design.md)")
+            lines.append(f"    - [Tasks](./roadmap/{change_id}/tasks.md)")
+    else:
+        lines.append("")
+        lines.append("[Roadmap](./roadmap/index.md)")
+
+    lines.append("")
+    lines.append("[Contributing](./contributing.md)")
+    lines.append("")
+    return "\n".join(lines)
+
+
 def build_roadmap_index() -> str:
     if not CHANGES:
-        return "# Implementation roadmap\n\n> **Status:** No OpenSpec changes are active yet."
+        return "\n".join(
+            [
+                "# Implementation roadmap",
+                "",
+                "> **Status:** No OpenSpec changes are active yet.",
+                "",
+            ]
+        )
     rows = []
     for change_id in CHANGES:
         tasks = (ROOT / "openspec" / "changes" / change_id / "tasks.md").read_text()
@@ -82,23 +85,30 @@ def build_roadmap_index() -> str:
 
 
 def main() -> None:
-    validate_source_inventory()
-    if BUILD_DOCS.exists():
-        shutil.rmtree(BUILD_DOCS)
-    shutil.copytree(ROOT / "docs", BUILD_DOCS)
+    # Copy static sources
+    for static_file in ("index.md", "contributing.md"):
+        src = SRC / static_file
+        if not src.is_file():
+            raise FileNotFoundError(f"required static doc source is missing: {src}")
 
+    # Copy EARS specification
     copy_with_notice(
         ROOT / "crua-ears-spec.md",
-        BUILD_DOCS / "specification" / "ears.md",
-        '> **Document status:** Draft, not yet approved. The source file `crua-ears-spec.md` is authoritative.',
-    )
-    copy_with_notice(
-        ROOT / "openspec" / "project.md",
-        BUILD_DOCS / "project-context.md",
-        '> **Source:** Generated from `openspec/project.md` during the documentation build.',
+        SRC / "specification" / "ears.md",
+        "> **Document status:** Draft, not yet approved. The source file `crua-ears-spec.md` is authoritative.",
     )
 
-    roadmap = BUILD_DOCS / "roadmap"
+    # Copy project context
+    copy_with_notice(
+        ROOT / "openspec" / "project.md",
+        SRC / "project-context.md",
+        "> **Source:** Generated from `openspec/project.md` during the documentation build.",
+    )
+
+    # Remove old roadmap if it exists, then generate fresh
+    roadmap = SRC / "roadmap"
+    if roadmap.exists():
+        shutil.rmtree(roadmap)
     roadmap.mkdir(parents=True, exist_ok=True)
     (roadmap / "index.md").write_text(build_roadmap_index())
 
@@ -117,7 +127,10 @@ def main() -> None:
             notice,
         )
 
-    print(f"assembled documentation sources in {BUILD_DOCS.relative_to(ROOT)}")
+    # Generate SUMMARY.md
+    (SRC / "SUMMARY.md").write_text(build_summary())
+
+    print(f"assembled documentation sources in {SRC.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

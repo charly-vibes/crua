@@ -5,10 +5,11 @@ codebase cost more than their shape implies — cache-line layout, dispatch/type
 stability, thread vs. event-loop concurrency models, and lock/STM contention —
 independent of whether that code is logically correct or well-composed.
 
-!!! warning "Draft and unimplemented"
-    EARS 1.0.0 and any OpenSpec changes are active proposals awaiting human
-    approval. This site documents intended behavior; it does not claim that
-    the CLI has been implemented.
+> **Draft and unimplemented**
+>
+> EARS 1.0.0 and any OpenSpec changes are active proposals awaiting human
+> approval. This site documents intended behavior; it does not claim that
+> the CLI has been implemented.
 
 ## Start here
 
