@@ -1,9 +1,63 @@
+# Project Context
+
+## Purpose
+Crua is a cross-language CLI that checks whether code respects the raw hardware
+and runtime cost model it executes on — cache-line layout, dispatch/type
+stability, thread vs. event-loop concurrency models, and lock/STM contention —
+independent of whether that code is logically correct or well-composed.
+
+The authoritative product requirements are in `crua-ears-spec.md`. Preserve
+its requirement IDs (`REQ-*`) in proposals, tests, findings, and traceability
+notes.
+
+## Tech Stack
+- Implementation language: Rust, organized as a Cargo workspace and exposed
+  as the `crua` CLI binary.
+- Rust baseline: stable toolchain, rustfmt formatting, Clippy linting, and
+  Cargo-native unit, integration, and documentation tests.
+- Language analysis: tree-sitter or a language-native parser behind
+  front-end plugins.
+- Core model: a language-agnostic representation of nodes, cost patterns,
+  hotness classes, and shape sources.
+- CLI output: human-readable, JSON, and SARIF.
+
+## Project Conventions
+- Use domain terms from the EARS specification consistently: cost pattern,
+  cost pattern kind, tier, hotness class, confirmation status, setup strategy,
+  shape source, effect channel.
+- Keep built-in vocabularies closed and project extensions explicitly
+  declared and validated.
+- Use stable requirement and rule IDs. A finding always has a rule ID, file,
+  line, cost pattern kind, tier, hotness class, and shape source.
+- Never generate or modify source or test files by default; benchmark
+  generation is an explicitly opt-in mode (`crua verify`).
+
+## Important Constraints
+- Static analysis must never execute analyzed source code.
+- Unknown or unsupported cost patterns must be visible in output, never
+  silently omitted.
+- Benchmark generation must never run as part of `crua scan`.
+- `guidance` mode never fails solely because of findings; `gate` mode fails
+  only when findings on diff-touched nodes meet the configured threshold.
+- Toolchain unavailability is `ToolchainUnavailable`, not `disconfirmed`.
+
 <!-- WAI:START -->
 # Workflow Tools
 
 This project uses **wai** to track the *why* behind decisions — research,
 reasoning, and design choices that shaped the code. Run `wai status` first
 to orient yourself.
+
+Detected workflow tools:
+- **wai** — research, reasoning, and design decisions
+- **openspec** — specifications and change proposals (see `openspec/AGENTS.md`)
+
+> **CRITICAL**: Apply TDD and Tidy First throughout — not just when writing code:
+> - **Planning/task creation**: each ticket should map to a red→green→refactor cycle; refactoring tasks must be separate tickets from feature tasks.
+> - **Design**: define the test shape (inputs/outputs) before designing the implementation.
+> - **Implementation**: write the failing test first, then make it pass, then tidy in a separate commit.
+
+> **When beginning research or creating a ticket**: run `wai search "<topic>"` to check for existing patterns before writing new content.
 
 ## Quick Start
 
