@@ -14,6 +14,15 @@ optionally consumes shape and effect-channel data already produced by a
 composability checker called Vampiro, and where a coverage checker called
 Livin can consume Crua's hotness data in return, if either is present.
 
+## Normative status
+
+This file is the normative product-requirements source. OpenSpec changes
+define reviewed implementation slices and SHALL trace to, but cannot override,
+the REQ IDs here. `openspec/project.md`, README files, and generated copies
+under `docs/` are explanatory when they conflict with this file. A deliberate
+requirements change therefore updates this file first and preserves existing
+REQ IDs unless a requirement is explicitly retired.
+
 ---
 
 ## 0. Background & Motivation
@@ -101,14 +110,26 @@ should.
   clear the threshold — the pattern matched syntactically but did not cost
   what the catalogue predicted), or `inconclusive` (Tier 3 attempted, but
   variance across runs exceeded the acceptable bound).
+- **Benchmark decision protocol**: unless project configuration overrides it,
+  run the native benchmark tool for 5 warm-up rounds followed by 30 measured
+  rounds for each variant in the same process and alternating order. The
+  measured ratio is `median(as-found) / median(canonical-fixed)`, the
+  confirmation threshold is `1.20`, and acceptable variance means each
+  variant's measured-round coefficient of variation (sample standard
+  deviation divided by mean) is at most `0.05`. The repro artifact records
+  the effective values, tool/toolchain versions, OS, CPU model and logical
+  core count. A ratio at least `1.20` with acceptable variance is `confirmed`;
+  a lower ratio with acceptable variance is `disconfirmed`; excessive
+  variance is `inconclusive`.
+- **Severity**: the ordered levels `low < medium < high < critical`. Unless
+  project configuration overrides it, gate mode uses threshold `high`.
 - **Setup strategy**: the method used to construct inputs for a generated
-  benchmark, in preference order: `verbatim` (the flagged declaration is
-  self-contained and lifted as-is), `structural-synthesis` (a
-  mechanically-generated instance built from an all-primitive type
-  declaration), `harvested-fixture` (an existing repo-native constructor —
-  a property-test generator, a test-file factory function, or a spec
-  generator — reused as-is), or `needs-agent-input` (no safe construction
-  method found; a stub is emitted rather than a guessed value).
+  benchmark, in the precedence defined normatively by REQ-17: `verbatim`,
+  then `harvested-fixture` (an existing repo-native constructor, property-test
+  generator, test-file factory, or spec generator reused as-is), then
+  `structural-synthesis` (a mechanically-generated instance built from an
+  all-primitive type declaration), then `needs-agent-input` (no safe
+  construction method found; a stub is emitted rather than a guessed value).
 - **Repro artifact**: a generated, standalone benchmark file produced only
   under `crua verify`, containing an as-found variant and a canonical-fixed
   variant of the flagged site, run with the target language's native
@@ -210,15 +231,19 @@ should.
   installed, the tool shall fall back to its own standalone extraction at
   reduced precision, recording `shape-source: standalone` on every
   finding produced in that run.
-- **REQ-17**: Where `crua verify` is enabled, the tool shall attempt setup
-  strategies in the order `verbatim` → `structural-synthesis` →
-  `harvested-fixture` → `needs-agent-input`, stopping at the first
-  strategy that produces a compilable repro.
+- **REQ-17**: Where `crua verify` is enabled, the tool shall select setup by
+  this single precedence order: (1) use `verbatim` if it produces a compilable
+  repro; otherwise (2) use `harvested-fixture` if a matching repo-native aid
+  described by REQ-18 exists and produces a compilable repro; otherwise (3)
+  use `structural-synthesis` if it produces a compilable repro; otherwise (4)
+  use `needs-agent-input`. The tool shall stop at the first successful step.
 - **REQ-18**: Where a repo-native construction aid is present (a
   property-test generator such as Hypothesis, `clojure.spec` generators,
   or a test-file factory function matching a `Create*`/`Build*`/`Make*`
-  naming convention) for the flagged type, the tool shall prefer
-  harvesting it over structural synthesis.
+  naming convention) for the flagged type, the tool shall try harvesting it
+  after `verbatim` and before structural synthesis, exactly as ordered by
+  REQ-17; an aid that does not produce a compilable repro shall not prevent
+  fallback to structural synthesis.
 - **REQ-19**: Where custom cost catalogue entries are supplied for
   project-specific types, the tool shall use them in place of, or in
   addition to, the built-in catalogue.
@@ -267,9 +292,15 @@ should.
 
 ## 8. Non-Functional Requirements
 
-- **REQ-28**: A diff-scoped `crua scan` (Tiers 0–2 only) shall complete
-  within a bound suitable for pre-commit or agent-loop invocation (target:
-  single-digit seconds).
+- **REQ-28**: A diff-scoped `crua scan` (Tiers 0–2 only) shall have a 95th
+  percentile wall-clock duration below 9.0 seconds across 20 measured runs on
+  the versioned `scan-moderate` fixture (100 diff-touched source files and 200
+  candidate sites), after one unmeasured warm-up run, on the project's CI
+  Linux runner with at least 4 logical CPUs, 8 GiB RAM, and SSD-backed storage.
+  The verification report shall record the fixture hash, Crua build profile,
+  OS, CPU model/core count, RAM, storage class, and all 20 durations. Runs in
+  which another repository job shares the runner are invalid and shall be
+  repeated.
 - **REQ-29**: `crua verify` (Tier 3) is not subject to REQ-28's bound and
   shall be invoked as an explicit, separately-budgeted step, never run
   implicitly as part of `crua scan`.

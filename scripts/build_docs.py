@@ -9,7 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "docs" / "src"
-CHANGES: dict[str, str] = {}
+CHANGES: dict[str, str] = {
+    "add-rust-cli-foundation": "cli-foundation",
+    "depend-on-genesis": "cli-foundation",
+}
 
 
 def copy_with_notice(source: Path, destination: Path, notice: str) -> None:
@@ -36,7 +39,8 @@ def build_summary() -> str:
         for change_id in CHANGES:
             lines.append(f"  - [`{change_id}`](./roadmap/{change_id}/proposal.md)")
             lines.append(f"    - [Capability delta](./roadmap/{change_id}/spec.md)")
-            lines.append(f"    - [Design](./roadmap/{change_id}/design.md)")
+            if (ROOT / "openspec" / "changes" / change_id / "design.md").is_file():
+                lines.append(f"    - [Design](./roadmap/{change_id}/design.md)")
             lines.append(f"    - [Tasks](./roadmap/{change_id}/tasks.md)")
     else:
         lines.append("")
@@ -119,8 +123,10 @@ def main() -> None:
     for change_id, capability in CHANGES.items():
         source = ROOT / "openspec" / "changes" / change_id
         destination = roadmap / change_id
-        for name in ("proposal", "design", "tasks"):
+        for name in ("proposal", "tasks"):
             copy_with_notice(source / f"{name}.md", destination / f"{name}.md", notice)
+        if (source / "design.md").is_file():
+            copy_with_notice(source / "design.md", destination / "design.md", notice)
         copy_with_notice(
             source / "specs" / capability / "spec.md",
             destination / "spec.md",
