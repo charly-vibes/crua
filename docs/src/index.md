@@ -1,3 +1,9 @@
+> *"We went all the way down south*
+> *We were frothing at the mouth*
+> *Coming down to Derby town*
+> *We'd beaten everyone around, singing"*
+> — Sumo
+
 # Crua
 
 Crua is a planned cross-language Rust CLI that checks whether the pieces of a
